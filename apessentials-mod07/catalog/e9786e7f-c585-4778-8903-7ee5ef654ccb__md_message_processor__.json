@@ -1,0 +1,13 @@
+{
+    "inputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "Delta_Web_Service_Consumer",
+            "typeId": "listAllFlightsResponse"
+        }
+    },
+    "outputMessageMetadata": {
+        "messagePayload": {}
+    },
+    "id": "e9786e7f-c585-4778-8903-7ee5ef654ccb",
+    "version": "5.2.0.0"
+}
