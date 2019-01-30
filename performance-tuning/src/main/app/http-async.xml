@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+    <asynchronous-processing-strategy name="Asynchronous_Processing_Strategy2" maxThreads="180" minThreads="10" threadTTL="2000" maxBufferSize="10" doc:name="Asynchronous Processing Strategy"/>
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <flow name="http-async">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/bids" doc:name="HTTP"/>
+
+        <set-session-variable variableName="startTime" value="#[server.nanoTime()]" doc:name="starttime"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+
+        <expression-component doc:name="Expression"><![CDATA[import java.util.Arrays;
+String[] data = payload.split("\n");
+payload=Arrays.asList(data);]]></expression-component>
+        <request-reply doc:name="Request-Reply">
+            <vm:outbound-endpoint exchange-pattern="one-way" path="aaa" doc:name="VM splitterq"/>
+            <vm:inbound-endpoint exchange-pattern="one-way" path="requestq" doc:name="VM requestq"/>
+        </request-reply>
+
+    </flow>
+    <flow name="http-async2">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="aaa" doc:name="VM splitterq"/>
+        <collection-splitter doc:name="Collection Splitter"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" path="bbb" doc:name="VM"/>
+    </flow>
+    <flow name="http-async1" processingStrategy="Asynchronous_Processing_Strategy2">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="bbb" doc:name="VM"/>
+        <component class="com.boa.EnricherAuctionComponent" doc:name="EnricherAuctionComponent"/>
+        <collection-aggregator failOnTimeout="true" doc:name="Collection Aggregator"/>
+        <component class="com.boa.HighestBidderAuctionComponent" doc:name="HighestBidderAuctionComponent"/>
+        <set-session-variable variableName="endTime" value="#[server.nanoTime()]" doc:name="endTime"/>
+        <logger message="#[(sessionVars.endTime  - sessionVars.startTime)/1000000000] secs" level="INFO" doc:name="Logger"/>
+        <vm:outbound-endpoint exchange-pattern="one-way" path="requestq" doc:name="VM requestq"/>
+    </flow>
+</mule>
