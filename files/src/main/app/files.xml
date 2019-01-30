@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+    <flow name="filesFlow">
+        <file:inbound-endpoint path="C:\Users\op\Desktop\input" moveToPattern="#[message.inboundProperties.originalFilename]-#[server.nanoTime()].backup" moveToDirectory="C:\Users\op\Desktop\output" responseTimeout="10000" doc:name="File IBEP">
+            <file:filename-regex-filter pattern=".*txt" caseSensitive="true"/>
+        </file:inbound-endpoint>
+        <file:file-to-string-transformer doc:name="File to String"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
