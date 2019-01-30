@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <configuration defaultExceptionStrategy-ref="ChoiceExceptionStrategy" doc:name="Configuration">
+        <http:config useTransportForUris="false"/>
+    </configuration>
+    <choice-exception-strategy name="ChoiceExceptionStrategy">
+        <catch-exception-strategy when="#[exception.cause is java.lang.RuntimeException]" doc:name="Catch Exception Strategy">
+            <set-payload value="{&quot;message&quot; : &quot;EXCEPTION_CAUGHT&quot;,&quot;reason&quot; : &quot;#[exception.message]&quot;,&quot;action&quot; : &quot;RETRY&quot;}" doc:name="Copy_of_Set Payload"/>
+            <set-property propertyName="http.status" value="500" doc:name="Copy_of_Property"/>
+            <logger message="#[payload]" level="INFO" doc:name="Copy_of_Logger"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy when="#[exception.cause is java.io.IOException]" doc:name="Catch Exception Strategy">
+            <set-payload value="{&quot;message&quot; : &quot;EXCEPTION_CAUGHT&quot;,&quot;reason&quot; : &quot;#[exception.message]&quot;,&quot;action&quot; : &quot;RETRY&quot;}" doc:name="Copy_of_Set Payload"/>
+            <set-property propertyName="http.status" value="500" doc:name="Copy_of_Property"/>
+            <logger message="#[payload]" level="INFO" doc:name="Copy_of_Logger"/>
+        </catch-exception-strategy>
+        <catch-exception-strategy doc:name="Catch Exception Strategy">
+            <set-payload value="{&quot;message&quot; : &quot;EXCEPTION_CAUGHT&quot;,&quot;reason&quot; : &quot;#[exception.message]&quot;,&quot;action&quot; : &quot;RETRY&quot;}" doc:name="Copy_of_Set Payload"/>
+            <set-property propertyName="http.status" value="500" doc:name="Copy_of_Property"/>
+            <logger message="#[payload]" level="INFO" doc:name="Copy_of_Logger"/>
+        </catch-exception-strategy>
+    </choice-exception-strategy>
+    <flow name="java-codeFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/java/code" allowedMethods="POST" doc:name="HTTP"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <component doc:name="Java">
+        	<!-- <method-entry-point-resolver>
+        		<include-entry-point method="debit"/>
+        	</method-entry-point-resolver> -->
+            <singleton-object class="com.boa.EmployeeProcessor"/>
+        </component>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <exception-strategy ref="ChoiceExceptionStrategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+</mule>
