@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <flow name="dwlFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/dwl" allowedMethods="GET" doc:name="HTTP"/>
+        <parse-template location="C:\Users\op\Desktop\input\FlightFinder.html" doc:name="Parse Template"/>
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+    <flow name="dwlFlow2">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/flights" doc:name="HTTP"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json.json"/>
+            <dw:set-payload resource="classpath:dwl-payload.dwl"/>
+            <dw:set-variable resource="classpath:dwl-xmlpayload.dwl" variableName="xmlPayload"/>
+            <dw:set-session-variable resource="classpath:dwl-jsonpayload.dwl" variableName="jsonPayload"/>
+
+        </dw:transform-message>
+    </flow>
+    <flow name="dwlFlow1">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/" doc:name="HTTP"/>
+        <set-payload value="[{&quot;airlineName&quot;:&quot;United&quot;,&quot;price&quot;:400,&quot;departureDate&quot;:&quot;2015/03/20&quot;,&quot;planeType&quot;:&quot;Boeing 737&quot;,&quot;origination&quot;:&quot;MUA&quot;,&quot;flightCode&quot;:&quot;ER38sd&quot;,&quot;availableSeats&quot;:0,&quot;destination&quot;:&quot;SFO&quot;},{&quot;airlineName&quot;:&quot;United&quot;,&quot;price&quot;:945,&quot;departureDate&quot;:&quot;2015/09/11&quot;,&quot;planeType&quot;:&quot;Boeing 757&quot;,&quot;origination&quot;:&quot;MUA&quot;,&quot;flightCode&quot;:&quot;ER39rk&quot;,&quot;availableSeats&quot;:54,&quot;destination&quot;:&quot;SFO&quot;},{&quot;airlineName&quot;:&quot;United&quot;,&quot;price&quot;:954,&quot;departureDate&quot;:&quot;2015/02/12&quot;,&quot;planeType&quot;:&quot;Boeing 777&quot;,&quot;origination&quot;:&quot;MUA&quot;,&quot;flightCode&quot;:&quot;ER39rj&quot;,&quot;availableSeats&quot;:23,&quot;destination&quot;:&quot;SFO&quot;}]" mimeType="application/json" doc:name="Set Payload"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\json_1.json"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+%type mydate=:date {format : "yyy/MM/dd"} 
+%type mystring=:string {format : "dd MMM yyyy"}
+---
+payload map {
+	operator : $.airlineName,
+	cost : $.price,
+	takeoffDate : $.departureDate 
+					as :mydate
+				 	as :mystring,
+	type : $.planeType replace "Boe" with "Bo",
+	fromAirport : $.origination,
+	code : $.flightCode,
+	emptySeats : 10 when $.availableSeats==0 otherwise $.availableSeats,
+	toAirport : $.destination
+} ]]></dw:set-payload>
+            <dw:set-variable variableName="jsonpayload"><![CDATA[%dw 1.0
+%output application/json
+%type mydate=:date {format : "yyy/MM/dd"} 
+%type mystring=:string {format : "dd MMM yyyy"}
+---
+payload map {
+	operator : $.airlineName,
+	cost : $.price,
+	takeoffDate : $.departureDate 
+					as :mydate
+				 	as :mystring,
+	type : $.planeType replace "Boe" with "Bo",
+	fromAirport : $.origination,
+	code : $.flightCode,
+	emptySeats : 10 when $.availableSeats==0 otherwise $.availableSeats,
+	toAirport : $.destination
+} ]]></dw:set-variable>
+            <dw:set-variable variableName="xmlpayload"><![CDATA[%dw 1.0
+%output application/xml
+%type mydate=:date {format : "yyy/MM/dd"} 
+%type mystring=:string {format : "dd MMM yyyy"}
+---
+flights : {(
+	payload map flight @(type : $.planeType replace "Boe" with "Bo", code : $.flightCode): {
+		operator : $.airlineName,
+		cost : $.price,
+		emptySeats : 10 when $.availableSeats==0 otherwise $.availableSeats,
+		airportInfo @(	takeoffDate : $.departureDate 
+					as :mydate
+				 	as :mystring) : {
+			fromAirport : $.origination,
+			toAirport : $.destination
+		}
+	}
+)}]]></dw:set-variable>
+        </dw:transform-message>
+    </flow>
+    <flow name="dwlFlow3">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/sample" allowedMethods="GET" doc:name="HTTP"/>
+        <parse-template location="sample.xml" doc:name="Parse Template"/>
+        <set-payload value="#[payload]" mimeType="application/xml" doc:name="Set Payload"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:input-payload doc:sample="sample_data\empty.xml"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+%namespace tns http://example.com
+---
+payload.tns#flights.*flight map {
+	airline : $.operator,
+	price : $.cost,
+	seats : $.emptySeats,
+	origination : $.airportInfo.fromAirport,
+	destination : $.airportInfo.toAirport,
+	planetype : $.@type,
+	code : $.@code,
+	departuredate : $.airportInfo.@takeoffDate
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+</mule>

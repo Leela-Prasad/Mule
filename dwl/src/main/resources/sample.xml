@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<flights>
+  <flight type="Boing 737" code="ER38sd">
+    <operator>United</operator>
+    <cost>400</cost>
+    <emptySeats>10</emptySeats>
+    <airportInfo takeoffDate="20 Mar 2015">
+      <fromAirport>MUA</fromAirport>
+      <toAirport>SFO</toAirport>
+    </airportInfo>
+  </flight>
+  <flight type="Boing 757" code="ER39rk">
+    <operator>United</operator>
+    <cost>945</cost>
+    <emptySeats>54</emptySeats>
+    <airportInfo takeoffDate="11 Sep 2015">
+      <fromAirport>MUA</fromAirport>
+      <toAirport>SFO</toAirport>
+    </airportInfo>
+  </flight>
+  <flight type="Boing 777" code="ER39rj">
+    <operator>United</operator>
+    <cost>954</cost>
+    <emptySeats>23</emptySeats>
+    <airportInfo takeoffDate="12 Feb 2015">
+      <fromAirport>MUA</fromAirport>
+      <toAirport>SFO</toAirport>
+    </airportInfo>
+  </flight>
+</flights>
